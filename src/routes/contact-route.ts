@@ -40,12 +40,15 @@ contactsRouter.delete("/delete", jwtAuthMiddleware, async (req: Request, res: Re
 contactsRouter.post("/edit", jwtAuthMiddleware,
     async (req: Request, res: Response) => {
         try {
-            const { name, contact, id } = req.body;
+            const { name, contact, id } = req.body.contact;
             if (!name) {
                 return res.status(400).json({ error: `Имя не может быть пустым` });
             }
             if (!contact) {
                 return res.status(400).json({ error: `Номер телефона не может быть пустым` });
+            }
+            if (!id) {
+                return res.status(400).json({ error: `id не может быть пустым` });
             }
             const profileToUpdate = await contactRepository.findOne({
                 where: {
@@ -57,8 +60,13 @@ contactsRouter.post("/edit", jwtAuthMiddleware,
                 profileToUpdate.contact = contact;
             }
             await contactRepository.save(profileToUpdate);
+            const newProfile = await contactRepository.findOne({
+                where: {
+                    id
+                }
+            })
 
-            return res.status(200).json({message: 'Успешно обновлено'});
+            return res.json(newProfile);
         } catch (error) {
             return res.status(500).json({error: `Ошибка при обновлении контакта. Подробнее: ${error}`});
         }
@@ -72,6 +80,9 @@ contactsRouter.get("/", jwtAuthMiddleware, async (req: IGetUserForRequest, res: 
         const contacts = await contactRepository.find({
             where: {
                 userId: user.id,
+            },
+            order: {
+                id: 'DESC',
             },
         });
 
